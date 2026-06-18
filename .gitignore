@@ -1,0 +1,37 @@
+# Maven
+target/
+
+# Compiled Java files
+*.class
+
+# Logs
+*.log
+
+# Runtime database files
+data/
+!data/.gitkeep
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# NetBeans
+nbproject/
+build/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
