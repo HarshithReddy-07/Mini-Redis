@@ -1,4 +1,5 @@
 package com.harshith.miniredis.store;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryStore implements KeyValueStore{
@@ -17,15 +18,15 @@ public class InMemoryStore implements KeyValueStore{
     public String get(String key){
         return storage.get(key);
     }
+    
+    @Override
+    public boolean delete(String key){
+        return storage.remove(key) != null;
+    }
 
     @Override
     public boolean exists(String key){
         return storage.containsKey(key);
-    }
-
-    @Override
-    public boolean delete(String key){
-        return storage.remove(key) != null;
     }
 
     @Override
