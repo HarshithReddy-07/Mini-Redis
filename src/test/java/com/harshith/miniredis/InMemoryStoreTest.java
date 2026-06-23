@@ -15,6 +15,10 @@ class InMemoryStoreTest{
 
         store.set("City", "Vizag");
 
+        assertEquals("Vizag",
+            store.get("City")
+        );
+
         assertTrue(
             store.delete("City")
         );

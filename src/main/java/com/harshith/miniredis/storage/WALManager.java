@@ -2,6 +2,7 @@ package com.harshith.miniredis.storage;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.charset.StandardCharsets;
@@ -11,7 +12,7 @@ import java.util.function.Consumer;
 
 public class WALManager implements AutoCloseable {
 
-    private final FileChannel fileChannel;
+    private FileChannel fileChannel;
     private final Path path;
     private static final int MAX_RECORD_SIZE = 1024 * 1024; // 1 MB
     
@@ -99,5 +100,21 @@ public class WALManager implements AutoCloseable {
         if(fileChannel.isOpen()){
             fileChannel.close();
         }
+    }
+
+    public synchronized void reset()
+        throws IOException {
+
+        close();
+
+        Files.deleteIfExists(path);
+
+        fileChannel =
+            FileChannel.open(
+                path,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.APPEND
+            );
     }
 }

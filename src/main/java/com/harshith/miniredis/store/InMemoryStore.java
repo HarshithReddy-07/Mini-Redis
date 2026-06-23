@@ -1,5 +1,7 @@
 package com.harshith.miniredis.store;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryStore implements KeyValueStore{
@@ -32,5 +34,18 @@ public class InMemoryStore implements KeyValueStore{
     @Override
     public int size(){
         return storage.size();
+    }
+
+    public Map<String, String> snapshot() {
+        return new HashMap<>(storage);
+    }
+
+    public void clear(){
+        storage.clear();
+    }
+
+    public void load(Map<String, String> data){
+        storage.clear();
+        storage.putAll(data);
     }
 }
