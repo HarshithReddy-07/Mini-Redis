@@ -1,6 +1,7 @@
 package com.harshith.miniredis.protocol;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.harshith.miniredis.storage.StorageEngine;
 
@@ -12,48 +13,46 @@ public class CommandProcessor {
         this.engine = engine;
     }
 
-    public String execute( String command){
+    public String execute( List<String> command){
 
         if(command == null){
             return "ERROR";
         }
 
-        command = command.trim();
+        int size = command.size();
 
-        if(command.isEmpty()){
+        if(size == 0){
             return "ERROR Empty Command";
         }
 
-        String[] parts = command.split("\\s+");
-        String op = parts[0].toUpperCase();
+        String op = command.get(0).toUpperCase();
         
         try{
             switch (op) {
                 case "PING":
-                    if(parts.length != 1)
+                    if(size != 1)
                         return "ERROR Wrong number of arguments";
                     return "PONG";
 
                 case "SET":
-                    if (parts.length != 3)
+                    if (size != 3)
                         return "ERROR Wrong number of arguments";
-                    engine.set(parts[1], parts[2]);
+                    engine.set(command.get(1), command.get(2));
                     return "OK";
 
                 case "GET":
-                    if (parts.length != 2)
+                    if (size != 2)
                         return "ERROR Wrong number of arguments";
-                    String value = engine.get(parts[1]);
-                    return value != null ? value : "NULL";
+                    return engine.get(command.get(1));
 
                 case "DEL":
-                    if (parts.length != 2)
+                    if (size != 2)
                         return "ERROR Wrong number of arguments";
-                    engine.delete(parts[1]);
+                    engine.delete(command.get(1));
                     return "OK";    
 
                 case "SNAPSHOT":
-                    if(parts.length != 1)
+                    if(size != 1)
                         return "ERROR Wrong number of arguments";
                     engine.snapshot();
                     return "OK";

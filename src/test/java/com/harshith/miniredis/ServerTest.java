@@ -2,11 +2,11 @@ package com.harshith.miniredis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
@@ -71,11 +71,11 @@ public class ServerTest {
             assertEquals(
                     "OK",
                     client.send(
-                            "SET name Harshith"));
+                            "SET", "name", "Harshith"));
             assertEquals(
                     "Harshith",
                     client.send(
-                            "GET name"));
+                            "GET", "name"));
         }
     }
 
@@ -88,7 +88,7 @@ public class ServerTest {
             assertEquals(
                     "NULL",
                     client.send(
-                            "GET missing"));
+                            "GET", "missing"));
         }
     }
 
@@ -98,15 +98,15 @@ public class ServerTest {
         try(TestClient client =
                 new TestClient()) {
             client.send(
-                    "SET city Hyderabad");
+                    "SET", "city", "Hyderabad");
             assertEquals(
                     "OK",
                     client.send(
-                            "DEL city"));
+                            "DEL", "city"));
             assertEquals(
                     "NULL",
                     client.send(
-                            "GET city"));
+                            "GET", "city"));
         }
     }
 
@@ -131,7 +131,7 @@ public class ServerTest {
 
             assertEquals(
                     "ERROR Wrong number of arguments",
-                    client.send("SET key"));
+                    client.send("SET", "key"));
         }
     }
 
@@ -158,22 +158,22 @@ public class ServerTest {
                 new TestClient();
             TestClient client2 =
                 new TestClient()) {
-            client1.send("SET user Harshith");
+            client1.send("SET", "user", "Harshith");
 
             server.stop();
 
             assertEquals(
                 "Harshith",
                 client2.send(
-                        "GET user"));
+                        "GET", "user"));
         }
     }
 
     private class TestClient implements AutoCloseable {
 
         private final Socket socket;
-        private final BufferedReader in;
-        private final PrintWriter out;
+        private final InputStream in;
+        private final OutputStream out;
 
         TestClient() throws IOException {
 
@@ -181,29 +181,131 @@ public class ServerTest {
                     "localhost",
                     server.getPort());
 
-            in = new BufferedReader(
-                    new InputStreamReader(
-                            socket.getInputStream()));
-
-            out = new PrintWriter(
-                    socket.getOutputStream(),
-                    true);
-
-            assertEquals(
-                    "MiniRedis Ready",
-                    in.readLine());
+            in = socket.getInputStream();
+            out = socket.getOutputStream();
         }
 
-        String send(String command) throws IOException {
+        String send(String... args) throws IOException {
 
-            out.println(command);
+            out.write(
+                    resp(args).getBytes(StandardCharsets.UTF_8));
 
-            return in.readLine();
+            out.flush();
+
+            return readResponse();
+        }
+
+        private String resp(String... args) {
+
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("*")
+            .append(args.length)
+            .append("\r\n");
+
+            for (String arg : args) {
+
+                byte[] bytes =
+                        arg.getBytes(StandardCharsets.UTF_8);
+
+                sb.append("$")
+                .append(bytes.length)
+                .append("\r\n")
+                .append(arg)
+                .append("\r\n");
+            }
+
+            return sb.toString();
+        }
+
+        private String readResponse() throws IOException {
+
+            int type = in.read();
+
+            if (type == -1) {
+                throw new IOException("Server closed connection");
+            }
+
+            switch (type) {
+
+                case '+':
+                    return readLine();
+
+                case '-':
+                    return "ERROR " + readLine().substring(4);
+
+                case '$':
+
+                    int length =
+                            Integer.parseInt(readLine());
+
+                    if (length == -1) {
+                        return null;
+                    }
+
+                    byte[] bytes =
+                            in.readNBytes(length);
+
+                    if (bytes.length != length) {
+                        throw new IOException(
+                                "Unexpected EOF");
+                    }
+
+                    expectCRLF();
+
+                    return new String(
+                            bytes,
+                            StandardCharsets.UTF_8);
+
+                default:
+                    throw new IOException(
+                            "Unknown RESP type: "
+                                    + (char) type);
+            }
+        }
+
+        private String readLine() throws IOException {
+
+            StringBuilder sb = new StringBuilder();
+
+            while (true) {
+
+                int b = in.read();
+
+                if (b == -1) {
+                    throw new IOException(
+                            "Unexpected EOF");
+                }
+
+                if (b == '\r') {
+
+                    int next = in.read();
+
+                    if (next != '\n') {
+                        throw new IOException(
+                                "Expected LF");
+                    }
+
+                    break;
+                }
+
+                sb.append((char) b);
+            }
+
+            return sb.toString();
+        }
+
+        private void expectCRLF() throws IOException {
+
+            if (in.read() != '\r'
+                    || in.read() != '\n') {
+                throw new IOException(
+                        "Missing CRLF");
+            }
         }
 
         @Override
-        public void close()
-                throws IOException {
+        public void close() throws IOException {
 
             socket.close();
         }
