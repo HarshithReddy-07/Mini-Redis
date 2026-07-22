@@ -142,7 +142,7 @@ public class ServerTest {
         try(TestClient client =
                 new TestClient()) {
             client.send(
-                    "SET a 10");
+                    "SET", "a", "10");
             assertEquals(
                     "OK",
                     client.send(
