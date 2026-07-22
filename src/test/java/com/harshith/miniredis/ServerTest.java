@@ -86,7 +86,7 @@ public class ServerTest {
         try(TestClient client =
                 new TestClient()) {
             assertEquals(
-                    "NULL",
+                    null,
                     client.send(
                             "GET", "missing"));
         }
@@ -104,7 +104,7 @@ public class ServerTest {
                     client.send(
                             "DEL", "city"));
             assertEquals(
-                    "NULL",
+                    null,
                     client.send(
                             "GET", "city"));
         }
